@@ -1,0 +1,106 @@
+#include <SPI.h>
+#include <MFRC522.h>
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+String uidString;
+
+int buzzer=5;
+int R=2;
+int G=4;
+int sensorIR=6;
+int kunci=0;
+#define SS_PIN 10
+#define RST_PIN 9
+MFRC522 mfrc522(SS_PIN, RST_PIN);  // Create MFRC522 instace
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(buzzer,OUTPUT);
+  pinMode(R,OUTPUT);
+  pinMode(G,OUTPUT);
+  pinMode(sensorIR,INPUT);
+  SPI.begin(); // initiate SPI bus
+  mfrc522.PCD_Init();  //initiate MFRC522
+  //bunyibuzzeroke();
+  digitalWrite(R,HIGH);
+  lcd.begin();
+  lcd.clear();
+  lcd.setCursor(0,0); lcd.print("WELCOME");
+  lcd.setCursor(0,1); lcd.print("TEMPELKAN KARTU");
+  delay(1000);
+}
+
+void loop() {
+int bacasensor=digitalRead(6);
+
+    if(mfrc522.PICC_IsNewCardPresent()&& kunci==0) {
+      readRFID();
+      Serial.print("Tag UID; ");
+      Serial.println(uidString);
+      
+      if(uidString=="138-55-90-26"){
+        bunyibuzzeroke();
+        kunci=1;
+        Serial.println("Berhasil");
+        delay(500);
+        digitalWrite(R,LOW);
+        lcd.clear();
+        lcd.setCursor(0,0); lcd.print("SILAHKAN MASUK");
+        delay(1000);
+        lcd.clear();
+        lcd.setCursor(0,0); lcd.print("PALANG DI BUKA");
+        delay(500);
+        digitalWrite(G,HIGH);
+        
+        }else{
+          Serial.println("Gagal");
+          bunyibuzzergagal();
+          lcd.clear();
+          lcd.setCursor(0,0); lcd.print("MAAF,GAGAL");
+          delay(1000);
+          lcd.clear();
+          lcd.setCursor(0,0); lcd.print("WELCOME");
+          lcd.setCursor(0,1); lcd.print("TEMPELKAN KARTU");
+          delay(1500);
+        }
+      }
+     if (bacasensor==0 && kunci==1){
+        digitalWrite(G,LOW);
+        digitalWrite(R,HIGH);
+        delay(100);
+        kunci=0;
+        lcd.clear();
+        lcd.setCursor(0,0); lcd.print("PALANG DI TUTUP");
+        delay(1000);
+        lcd.clear();
+        lcd.setCursor(0,0); lcd.print("WELCOME");
+        lcd.setCursor(0,1); lcd.print("TEMPELKAN KARTU");
+        delay(1500);
+      }
+}
+ 
+void readRFID(){
+  mfrc522.PICC_ReadCardSerial();
+  //sound the buzzer when a card is read
+  //bunyibuzzeroke();
+  //pembatas bisa di ubah sesuai keinginan,disini yang digunakan "-"
+  uidString=String(mfrc522.uid.uidByte[0])+"-"+
+  String(mfrc522.uid.uidByte[1]) +"-"+
+  String(mfrc522.uid.uidByte[2]) +"-"+
+  String(mfrc522.uid.uidByte[3]);
+}
+
+void bunyibuzzeroke(){
+  digitalWrite(buzzer,HIGH);
+  delay(100);
+  digitalWrite(buzzer,LOW);
+  delay(100);
+}
+void bunyibuzzergagal(){
+  digitalWrite(buzzer,HIGH);
+  delay(500);
+  digitalWrite(buzzer,LOW);
+  delay(500);
+}
